@@ -1,5 +1,7 @@
 # Amazon 月別領収書
 
+> **これは [vessel-ltd/amazon-assist](https://github.com/vessel-ltd/amazon-assist) の個人用フォークです。** 適格請求書を支払い方法別のフォルダーに保存する機能を追加しています（[説明](#適格請求書をフォルダーに保存するこの個人用フォーク)）。以下のストア版・リリースZIP・バッジ・変更履歴のリンクは上流のもので、この機能は含まれません。
+
 Amazon.co.jpのひと月分の領収書・購入明細書を、ひとつのPDFにまとめるChrome拡張です。年月を選んで出力できます。
 
 **[Chromeウェブストア](https://chromewebstore.google.com/detail/mgikojncbdnfamlffbccaeemmdchmjpo)からインストールできます。** ストア版は自動で更新されます。GitHubのリリースZIPから手動でインストールすることもできます。
