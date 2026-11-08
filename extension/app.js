@@ -1,4 +1,5 @@
-import {ORIGIN, parseMonth, collectOrders, parseReceipt, reportHTML, orderPrintURL} from './core.js';
+import {ORIGIN, parseMonth, collectOrders, parseReceipt, reportHTML, orderPrintURL, amazonURL} from './core.js';
+import {saveInvoices} from './invoices.js';
 import {RenderedAmazonReader} from './worker.js';
 import {DiagnosticLog,VERSION,errorCode} from './diagnostics.js';
 const $ = id => document.getElementById(id);
@@ -33,10 +34,25 @@ async function preview(html) {
   const failed=[...frame.contentDocument.images].filter(img=>!img.complete || !img.naturalWidth);
   if(failed.length) throw new Error(`商品画像${failed.length}件を読み込めませんでした。プレビューを確認し、再実行してください。`);
 }
+async function amazonFetch(url,signal) {
+  const response=await fetch(amazonURL(url),{credentials:'include',signal});
+  if(!response.ok) throw new Error(`Amazonから正常な応答が得られませんでした（${response.status}）。ログイン状態を確認してください。`);
+  return response;
+}
 $('export-form').onsubmit = async event => {
   event.preventDefault();
+  const invoiceMode=event.submitter?.id==='save-invoices';
+  let root;
+  if(invoiceMode) {
+    // Must run first: the folder picker needs the click's user activation.
+    try {root=await showDirectoryPicker({mode:'readwrite',id:'amazon-invoices'});}
+    catch(e) {
+      if(e.name==='AbortError')return;
+      $('error').textContent=`保存先フォルダーを開けませんでした。${e.message}`;$('error').hidden=false;return;
+    }
+  }
   controller = new AbortController();
-  $('export').disabled=true;$('month').disabled=true;$('cancel').hidden=false;
+  $('export').disabled=true;$('save-invoices').disabled=true;$('month').disabled=true;$('cancel').hidden=false;
   $('error').hidden=true;$('print').hidden=true;$('preview').hidden=true;$('preview').srcdoc='';$('progress').hidden=false;$('progress').removeAttribute('value');
   const month=$('month').value;
   diagnostic=new DiagnosticLog(month);stage='start';currentOrder=undefined;
@@ -50,6 +66,21 @@ $('export-form').onsubmit = async event => {
     const orders=await collectOrders(`${ORIGIN}/your-orders/orders?timeFilter=year-${year}`,month,url=>reader.load(url,'orders'),s=>$('status').textContent=s,controller.signal);
     diagnostic.add('orders_selected',{stage,count:orders.length});
     if(!orders.length){diagnostic.add('empty',{stage:'finished'});$('status').textContent=`${month}の注文はありません。`;return;}
+    if(invoiceMode) {
+      stage='invoice';$('progress').max=orders.length;$('progress').value=0;
+      const result=await saveInvoices({orders,month,root,signal:controller.signal,
+        loadReceipt:order=>{currentOrder=order.id;return reader.load(orderPrintURL(order),'receipt',order.id);},
+        fetchDoc:async url=>new DOMParser().parseFromString(await (await amazonFetch(url,controller.signal)).text(),'text/html'),
+        fetchBytes:async url=>new Uint8Array(await (await amazonFetch(url,controller.signal)).arrayBuffer()),
+        onProgress:({index,total})=>{$('status').textContent=`適格請求書を保存しています（${index} / ${total}件）`;$('progress').value=index-1;},
+        onDiagnostic:(event,fields)=>diagnostic.add(event,{...fields,stage})});
+      currentOrder=undefined;
+      diagnostic.add('invoices_saved',{stage:'finished',count:result.saved});
+      const folders=Object.entries(result.folders).map(([k,v])=>`${k}: ${v}件`).join('、');
+      $('status').textContent=`${month} · 適格請求書を${result.saved}件保存しました${folders?`（${folders}）`:''}。`;
+      if(result.noInvoice.length){$('error').textContent=`適格請求書がない注文（${result.noInvoice.length}件）:\n${result.noInvoice.join('\n')}`;$('error').hidden=false;}
+      return;
+    }
     const receipts=[];
     $('progress').max=orders.length;
     for(const [i,order] of orders.entries()){
@@ -81,7 +112,7 @@ $('export-form').onsubmit = async event => {
     if(e.name!=='AbortError'){$('error').textContent=e.message;$('error').hidden=false;}
   } finally {
     try{await reader?.close();}catch{diagnostic.add('cleanup_failed',{stage});}reader=null;
-    $('export').disabled=false;$('month').disabled=false;$('cancel').hidden=true;$('progress').hidden=true;
+    $('export').disabled=false;$('save-invoices').disabled=false;$('month').disabled=false;$('cancel').hidden=true;$('progress').hidden=true;
     $('diagnostics').hidden=false;
   }
 };

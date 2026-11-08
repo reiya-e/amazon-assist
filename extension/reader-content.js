@@ -209,6 +209,51 @@ async function collectOrders(firstURL, month, load, progress, signal) {
   }
   return [...orders.values()].sort((a,b)=>b.day-a.day);
 }
+// ---- Invoice export (personal fork): payment-method folders + invoice PDFs ----
+function invoicePopoverURL(order) {
+  if (!/^[A-Z0-9]{3}-\d{7}-\d{7}$/.test(order.id)) throw new Error('注文番号を読み取れませんでした。');
+  return order.menu || `${ORIGIN}/your-orders/invoice/popover?orderId=${encodeURIComponent(order.id)}`;
+}
+// The popover lists the print page, the invoice PDF ("明細書／適格請求書") and a
+// contact link. Only the PDF link is returned; null means no invoice was issued.
+function parseInvoicePopover(doc, base = ORIGIN) {
+  checkDocument(doc);
+  const links = [...doc.querySelectorAll('a[href]')].map(a => a.getAttribute('href'))
+    .filter(href => /\/documents\/download\/[0-9a-f-]{36}\/invoice\.pdf(?:[?#]|$)/i.test(href));
+  return {invoiceUrl: links.length ? amazonURL(links[0], base) : null};
+}
+function isPDF(bytes) {
+  return bytes.length > 5 && bytes[0]===0x25 && bytes[1]===0x50 && bytes[2]===0x44 && bytes[3]===0x46 && bytes[4]===0x2d;
+}
+// Payment rows on the receipt page. A card row reads "<name> •••• 1350" (normal
+// orders) or "<name> 下4桁 1350" (Amazon Fresh). Anything else (Amazonポイント,
+// gift card, ...) is a non-card row.
+const CARD_ROW = /(?:•{2,}|\*{2,}|下4桁|末尾)\s*(\d{4})\s*$/;
+function extractPayment(doc) {
+  const root = receiptRoot(doc) || doc;
+  let rows = [...root.querySelectorAll('[data-testid="payment-instrument-message"]')];
+  if (!rows.length) rows = [...root.querySelectorAll('.pmts-payment-instrument-billing-address')];
+  const texts = rows.map(r => renderedText(r).replace(/\s+/g, ' ').trim()).filter(Boolean);
+  if (!texts.length) return {kind: 'unknown'};
+  const cards = new Set(), other = [];
+  for (const t of texts) {
+    const m = t.match(CARD_ROW);
+    if (m) cards.add(m[1]); else other.push(t);
+  }
+  if (cards.size === 1 && !other.length) return {kind: 'card', last4: [...cards][0]};
+  if (cards.size + other.length >= 2) return {kind: 'mixed'};
+  return {kind: 'unknown'};
+}
+const MIXED_FOLDER = '混在', UNKNOWN_FOLDER = '不明';
+function paymentFolder(payment) {
+  if (payment?.kind === 'card' && /^\d{4}$/.test(payment.last4)) return `カード下4桁${payment.last4}`;
+  return payment?.kind === 'mixed' ? MIXED_FOLDER : UNKNOWN_FOLDER;
+}
+function invoiceFileName(order, month) {
+  parseMonth(month);
+  if (!/^[A-Z0-9]{3}-\d{7}-\d{7}$/.test(order.id) || !Number.isInteger(order.day)) throw new Error('注文番号を読み取れませんでした。');
+  return `${month}-${String(order.day).padStart(2, '0')}_${order.id}.pdf`;
+}
 
 
 // Structural facts only: never include text, URLs, attributes, or payment data.

@@ -1,5 +1,5 @@
 // Only explicitly selected fields can leave memory in the diagnostic download.
-export const VERSION='1.1.7';
+export const VERSION='1.2.0';
 export function errorCode(error) {
   if(error?.name==='AbortError') return 'cancelled';
   const text=String(error?.message || '');
@@ -9,16 +9,16 @@ export function errorCode(error) {
     [/タブが閉じ/,'tab_closed'],[/商品画像/,'images_unavailable'],
     [/注文日/,'order_date_unreadable'],[/注文番号/,'order_id_unreadable'],
     [/領収書のない|領収書等のリンク/,'receipt_link_missing'],
-    [/領収書の内容/,'receipt_invalid'],[/次ページ|同じページ|ページ送り/,'pagination_invalid'],
+    [/適格請求書/,'invoice_invalid'],[/領収書の内容/,'receipt_invalid'],[/次ページ|同じページ|ページ送り/,'pagination_invalid'],
     [/注文一覧/,'orders_invalid'],[/Amazon以外/,'unexpected_origin'],
     [/年月/,'month_invalid']
   ]) if(pattern.test(text)) return code;
   return 'unclassified';
 }
-const stages=new Set(['start','orders','receipt','preview','print','finished']);
-const events=new Set(['started','page_open','page_state','page_ready','page_failed','orders_selected','receipt_started','receipt_ready','preview_ready','print_requested','failed','cancelled','empty','cleanup_failed']);
+const stages=new Set(['start','orders','receipt','preview','print','invoice','finished']);
+const events=new Set(['started','page_open','page_state','page_ready','page_failed','orders_selected','receipt_started','receipt_ready','preview_ready','print_requested','failed','cancelled','empty','cleanup_failed','invoice_saved','invoice_missing','invoices_saved']);
 const states=new Set(['loading','interactive','complete','unknown']);
-const codes=new Set(['cancelled','not_extension','reload_required','authentication_required','timeout','tab_closed','images_unavailable','order_date_unreadable','order_id_unreadable','receipt_link_missing','receipt_invalid','orders_invalid','pagination_invalid','unexpected_origin','month_invalid','unclassified']);
+const codes=new Set(['cancelled','not_extension','reload_required','authentication_required','timeout','tab_closed','images_unavailable','order_date_unreadable','order_id_unreadable','receipt_link_missing','receipt_invalid','orders_invalid','pagination_invalid','unexpected_origin','month_invalid','invoice_invalid','unclassified']);
 const counts=['cards','datedCards','invoiceLinks','detailLinks','scripts','count','index','elapsedMs'];
 const flags=['main','identity','heading','amount','payment','paymentReady','login','challenge','menu'];
 export class DiagnosticLog {
