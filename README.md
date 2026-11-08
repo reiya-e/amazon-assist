@@ -50,6 +50,10 @@ GitHubの「Code → Download ZIP」または `git clone` で入手した場合�
 
 注文ごとに改ページします。商品数が多い注文は複数ページになる場合があります。「ヘッダーとフッター」は日時・ページ番号を付けたい場合にオン、不要ならオフにしてください。
 
+### 適格請求書をフォルダーに保存する（この個人用フォーク）
+
+「適格請求書をフォルダーに保存」を押して保存先のフォルダーを選ぶと、その下に支払い方法別のフォルダー（`カード下4桁NNNN`・`混在`・`不明`）を作り、`YYYY-MM-DD_注文番号.pdf` の名前で請求書PDFを保存します。ポイントなどカード以外と併用した注文は `混在`、支払い方法を読み取れない注文は `不明` です。請求書が発行されていない注文は保存せず、完了時に注文番号を一覧表示します。同名のファイルは上書きします。取得に失敗した注文があるときは、黙って省かず全体を中止します。
+
 ## 更新方法
 
 Chromeウェブストアからインストールした場合は、Chromeが自動で更新します。新しい版は審査を経てストアに反映されるため、GitHubのリリースより遅れる場合があります。
@@ -83,6 +87,7 @@ ZIPやソースから手動でインストールした拡張は、自動更新�
 | Amazonへのアクセス範囲 | [manifest.json](extension/manifest.json) |
 | 専用タブでの読み取り・認証待ち | [worker.js](extension/worker.js)、[rendered.js](extension/rendered.js)、[reader-bridge.js](extension/reader-bridge.js) |
 | 対象月の抽出・領収書検証・印刷内容 | [core.js](extension/core.js)、[app.js](extension/app.js) |
+| 適格請求書の保存（支払い方法別フォルダー） | [invoices.js](extension/invoices.js)、[core.js](extension/core.js)、[app.js](extension/app.js) |
 | 診断ログに含める情報 | [diagnostics.js](extension/diagnostics.js) |
 
 配布ZIPも自動テストの対象です。ZIPを展開した状態で、架空の注文と模擬Chrome APIによる起動から印刷要求までを確認します。これは実ChromeでのPDF保存を保証するものではありません。自動確認の範囲と実Chromeの確認手順は [リリースガイド](docs/RELEASING.md) に記載しています。
