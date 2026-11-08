@@ -16,7 +16,7 @@
 ## 運用ルール
 
 - このフォークには `AGENTS.md` / `CLAUDE.md` を作らない。AI エージェント向けの指示は、この `FORK.md` が担う（親リポジトリのブリッジ規約の例外）。
-- コミットはこのフォーク自身の Git（`workspace/amazon-assist/.git`）で、`personal` ブランチに作業の区切りごとに行う。`main` には直接コミットしない。push 先は `origin`（自分のフォーク）の `personal`。親リポジトリ（AI-agent）の Git では管理しない。
+- コミットはこのフォーク自身の Git（`workspace/amazon-assist/.git`）で、`personal` ブランチに作業の区切りごとに行う。`main` には直接コミットしない。push 先は `origin`（自分のフォーク）の `personal`。親リポジトリ（AI-agent）の Git では管理しない。親の AGENTS.md にある「`origin/master` へ push」は、このフォークには適用しない（この FORK.md を優先する）。
 - フォークは公開リポジトリ。実際の領収書・注文履歴 HTML・カード情報は絶対にコミットしない。置き場所は `tmp/fixtures/`（`.gitignore` 済み）。コミット前に `git status` と差分で確認する。
 - 方針: 領収書のPDF化は行わず、適格請求書PDFを `fetch` で取得し、`showDirectoryPicker` で選んだフォルダー配下へ支払い方法別に書き込む（`debugger` 権限は使わない）。詳細は「プラン」。
 
@@ -58,7 +58,7 @@
 
 1. 出店者発行注文の請求書、請求書なしの理由、ギフト券・コンビニ払いの文言を確認する（「未確定事項」）。
 2. （任意・低優先）上の「次のタスク」（注文一覧の打ち切り設定）を実装する。
-3. ユーザーが解決を確認したら、落とし穴を `docs/troubleshooting/`（親リポジトリ）に記録する。
+3. ユーザーが解決を確認したら、落とし穴を `../../docs/troubleshooting/`（親リポジトリ）に記録する。
 
 この PC の環境メモ: `python3` は Microsoft Store のスタブで動かない（`npm test` の Python 部分と `npm run test:package` が失敗する。変更前から同じ）。Python は `python`（3.8）を使い、`PYTHONUTF8=1` を付ける。Python 3.8.0 は長い日本語行を含むスクリプトを標準入力・ファイルから読むと「Non-UTF-8 code」で失敗することがあるので、日本語を含む編集は Node で行う。README などは CRLF。
 Claude in Chrome は使える（`mcp__claude-in-chrome__*`）が、ユーザーが開いているタブは見えず、新しいタブグループで作業する。ログインは共有される。
